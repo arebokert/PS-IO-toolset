@@ -27,7 +27,7 @@ def main():
 	cu2sDir = args.cu2s
 	imgsDir = args.imgs
 	gamesDir = args.games
-	scriptDir = os.path.realpath(__file__).replace("merger.py", "")
+	scriptDir, scriptName = os.path.split(os.path.realpath(__file__))
 	binmergeDir = os.path.join(scriptDir,"binmerge")
 	readGameIdDir = "read-game-id.sh"
 
