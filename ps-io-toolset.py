@@ -17,8 +17,8 @@ class bcolors:
 
 def main():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-c","--cu2s", type=str, help="Input folder containing CU2 files. If not supplied, CU2s will not be copied)")
-	parser.add_argument("-i","--imgs", type=str, help="Input folder containing image files. If not supplied, images will not be copied)")
+	parser.add_argument("-c","--cu2s", type=str, help="Input folder containing CU2 files. If not supplied, CU2s will not be copied")
+	parser.add_argument("-i","--imgs", type=str, help="Input folder containing image files (need to be bmp format). If not supplied, images will not be copied")
 	parser.add_argument("-g","--games", type=str, help="Input folder containing bin files (need to be separated in to folders)",
 		required=True)
 	
@@ -74,7 +74,7 @@ def main():
 								print bcolors.FAIL + str(Ex) + ": Could not remove file" + bcolors.ENDC
 			for root3, dirs, files in os.walk(path):
 				for file in files:
-					if ".cue" in file and cu2sDir and imgsDir:
+					if ".cue" in file and (cu2sDir or imgsDir):
 						cu2File = file
 						cu2List = []
 						result = subprocess.check_output(readGameIdDir + ' "' + cu2File + '"', shell=True, cwd=path)
@@ -86,58 +86,60 @@ def main():
 						if gameId:
 							print "GameID found: " + gameId
 							regexGameId = re.compile(r"([A-Z]{4}[ |-][0-9]{5})")
-							for cu2 in cu2s:
-								matchedFile = regexGameId.search(cu2)
-								if matchedFile and matchedFile.group(1).replace(" ", "-").lower() == gameId:
-									cu2List.append(cu2)
-							cu2List.sort()
-							matchedCu2 = ""
-							if len(cu2List) > 1:
-								print "Found more than one matching CU2 file"
-								regexVersion = re.compile(r"([(].?)([0-9][.][0-9])([)])")
-								matchedFile = regexVersion.search(file)
-								if matchedFile:
-									matchedFile = matchedFile.group(2)
-									for cu2 in cu2List:
-										matchedCu2 = regexVersion.search(cu2)
-										if matchedCu2:
-											matchedCu2 = matchedCu2.group(2)
-											if matchedFile == matchedCu2:
-												matchedCu2 = cu2
-												break
-											else:
-												matchedCu2 = ""
+							if cu2sDir:
+								for cu2 in cu2s:
+									matchedFile = regexGameId.search(cu2)
+									if matchedFile and matchedFile.group(1).replace(" ", "-").lower() == gameId:
+										cu2List.append(cu2)
+								cu2List.sort()
+								matchedCu2 = ""
+								if len(cu2List) > 1:
+									print "Found more than one matching CU2 file"
+									regexVersion = re.compile(r"([(].?)([0-9][.][0-9])([)])")
+									matchedFile = regexVersion.search(file)
+									if matchedFile:
+										matchedFile = matchedFile.group(2)
+										for cu2 in cu2List:
+											matchedCu2 = regexVersion.search(cu2)
+											if matchedCu2:
+												matchedCu2 = matchedCu2.group(2)
+												if matchedFile == matchedCu2:
+													matchedCu2 = cu2
+													break
+												else:
+													matchedCu2 = ""
 
-							if len(cu2List) > 0:
-								cu2Copy = ""
-								if matchedCu2:
-									print "Found matching CU2 file for this version of the bin file"
-									cu2Copy = os.path.join(cu2sDir, matchedCu2)
-								else:
-									print "More than one matching CU2 file resulting in indecisiveness, picking last one in order"
-									cu2Copy = os.path.join(cu2sDir, cu2List[len(cu2List)-1])
-								try:
-									copyfile(cu2Copy, os.path.join(path, file.replace(".cue", ".cu2")))
-								except Exception as Ex:
-									print bcolors.FAIL + str(Ex) + ": Could not copy CU2 file" + bcolors.ENDC
-							else:
-								print "No CU2 file found, skipping copy of CU2"
-							imgCopied = False
-							for img in imgs:
-								matchedFile = regexGameId.search(img)
-								if matchedFile and matchedFile.group(1).replace(" ", "-").lower() == gameId:
-									print "Found matching image file for this bin file"
-									imgCopy = os.path.join(imgsDir, img)
+								if len(cu2List) > 0:
+									cu2Copy = ""
+									if matchedCu2:
+										print "Found matching CU2 file for this version of the bin file"
+										cu2Copy = os.path.join(cu2sDir, matchedCu2)
+									else:
+										print "More than one matching CU2 file resulting in indecisiveness, picking last one in order"
+										cu2Copy = os.path.join(cu2sDir, cu2List[len(cu2List)-1])
 									try:
-										copyfile(imgCopy, os.path.join(path, file.replace(".cue", ".bmp")))
+										copyfile(cu2Copy, os.path.join(path, file.replace(".cue", ".cu2")))
 									except Exception as Ex:
-										print bcolors.FAIL + str(Ex) + ": Could not copy image file" + bcolors.ENDC
-									imgCopied = True
-									break
+										print bcolors.FAIL + str(Ex) + ": Could not copy CU2 file" + bcolors.ENDC
 								else:
-									imgCopied = False
-							if not imgCopied:
-								print "No image file found, skipping copy of image"
+									print "No CU2 file found, skipping copy of CU2"
+							if imgsDir:
+								imgCopied = False
+								for img in imgs:
+									matchedFile = regexGameId.search(img)
+									if matchedFile and matchedFile.group(1).replace(" ", "-").lower() == gameId:
+										print "Found matching image file for this bin file"
+										imgCopy = os.path.join(imgsDir, img)
+										try:
+											copyfile(imgCopy, os.path.join(path, file.replace(".cue", ".bmp")))
+										except Exception as Ex:
+											print bcolors.FAIL + str(Ex) + ": Could not copy image file" + bcolors.ENDC
+										imgCopied = True
+										break
+									else:
+										imgCopied = False
+								if not imgCopied:
+									print "No image file found, skipping copy of image"
 						else:
 							print "No gameID found, skipping copy of CU2 and image"
 
