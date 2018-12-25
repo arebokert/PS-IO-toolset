@@ -30,3 +30,5 @@ Place binmerge and read-game-id.sh in the same directory as ps-io-toolset.py. Ru
 
 #### Caution
 This tool will delete the separated bin files after merging them all in to one single bin.
+
+If multiple matching CU2 files are found for the gameID in question, the tool will first check version of the bin. If version is not found in the file name it will pick the last one in order of found CU2 files.
